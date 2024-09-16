@@ -1,4 +1,5 @@
 const express = require('express')
+const {read, write} = require('fs.service')
 
 const app = express();
 
@@ -19,28 +20,32 @@ const users = [
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
-app.get('/users', (req, res) => {
+app.get('/users', async (req, res) => {
     try {
+        const users = await read()
         res.send(users)
-
     } catch (e) {
         res.status(500).send(e.message)
     }
 })
-app.post('/users', (req, res) => {
+app.post('/users', async (req, res) => {
     try {
         const {name, email, password} = req.body
+        const users = await read()
         const id = users[users.length - 1].id + 1
         const newUser = {id, name, email, password}
         users.push(newUser)
+
+        await write(users)
         res.status(201).send(newUser)
     } catch (e) {
         res.status(500).send(e.message)
     }
 })
-app.get('/users/:userId', (req, res) => {
+app.get('/users/:userId', async (req, res) => {
     try {
         const userId = Number(req.params.userId)
+        const users = await read()
         const user = users.find(user => user.id === userId)
         if (!user) {
             return res.status(404).send('User not found')
@@ -51,15 +56,17 @@ app.get('/users/:userId', (req, res) => {
     }
 })
 
-app.put('/users/:userId', (req, res) => {
+app.put('/users/:userId', async (req, res) => {
     try {
         const userId = Number(req.params.userId)
+        const users = await read()
         const userIndex = users.findIndex(user => user.id === userId)
         if (userIndex === -1) {
             return res.status(404).send('User not found')
         }
         const {name, email, password} = req.body
         users[userIndex] = {...users[userIndex], name, email, password}
+        await write(users)
         res.status(201).send(users[userIndex])
     } catch (e) {
         res.status(500).send(e.message)
