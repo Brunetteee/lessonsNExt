@@ -57,7 +57,7 @@ class AuthService {
     refreshToken: string,
     jwtPayload: ITokenPayload,
   ): Promise<ITokenPair> {
-    await tokenRepository.deleteByParams({ refreshToken });
+    await tokenRepository.deleteOneByParams({ refreshToken });
     const tokens = tokenService.generateTokens({
       userId: jwtPayload.userId,
       role: jwtPayload.role,
@@ -71,6 +71,25 @@ class AuthService {
     if (user) {
       throw new ApiError("Email is already exist", 409);
     }
+  }
+
+  public async logout(
+    jwtPayload: ITokenPayload,
+    tokenId: string,
+  ): Promise<void> {
+    const user = await userRepository.getById(jwtPayload.userId);
+    await tokenRepository.deleteOneByParams({ _id: tokenId });
+    await emailService.sendMail(EmailTypeEnum.LOGOUT, user.email, {
+      name: user.name,
+    });
+  }
+
+  public async logoutAll(jwtPayload: ITokenPayload): Promise<void> {
+    const user = await userRepository.getById(jwtPayload.userId);
+    await tokenRepository.deleteManyByParams({ _userId: jwtPayload.userId });
+    await emailService.sendMail(EmailTypeEnum.LOGOUT, user.email, {
+      name: user.name,
+    });
   }
 }
 
