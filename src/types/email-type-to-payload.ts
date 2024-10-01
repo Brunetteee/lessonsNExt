@@ -3,7 +3,10 @@ import { EmailPayloadType } from "./email-payload.type";
 import { PickRequired } from "./pick-required.type";
 
 export type EmailTypeToPayload = {
-  [EmailTypeEnum.WELCOME]: PickRequired<EmailPayloadType, "name">;
+  [EmailTypeEnum.WELCOME]: PickRequired<
+    EmailPayloadType,
+    "name" | "actionToken"
+  >;
 
   [EmailTypeEnum.FORGOT_PASSWORD]: PickRequired<
     EmailPayloadType,

@@ -29,10 +29,23 @@ class AuthService {
     });
     await tokenRepository.create({ ...tokens, _userId: user._id });
 
+    const token = tokenService.generateActionTokens(
+      { userId: user._id, role: user.role },
+      ActionTokenTypeEnum.FORGOT_PASSWORD,
+    );
+    await actionTokenRepository.create({
+      type: ActionTokenTypeEnum.FORGOT_PASSWORD,
+      _userId: user._id,
+      token,
+    });
+
     await emailService.sendMail(
       EmailTypeEnum.WELCOME,
       "evagelina304@gmail.com",
-      { name: user.name },
+      {
+        name: user.name,
+        actionToken: token,
+      },
     );
     return { user, tokens };
   }
@@ -107,10 +120,10 @@ class AuthService {
 
     const token = tokenService.generateActionTokens(
       { userId: user._id, role: user.role },
-      ActionTokenTypeEnum.FORGOT_PASSWORD,
+      ActionTokenTypeEnum.VERIFY_EMAIL,
     );
     await actionTokenRepository.create({
-      type: ActionTokenTypeEnum.FORGOT_PASSWORD,
+      type: ActionTokenTypeEnum.VERIFY_EMAIL,
       _userId: user._id,
       token,
     });
@@ -134,6 +147,14 @@ class AuthService {
       type: ActionTokenTypeEnum.FORGOT_PASSWORD,
     });
     await tokenRepository.deleteManyByParams({ _userId: jwtPayload.userId });
+  }
+
+  public async verify(jwtPayload: ITokenPayload): Promise<void> {
+    await userRepository.updateById(jwtPayload.userId, { isVerify: true });
+    await actionTokenRepository.deleteManyByParams({
+      _userId: jwtPayload.userId,
+      type: ActionTokenTypeEnum.FORGOT_PASSWORD,
+    });
   }
 }
 
